@@ -307,17 +307,6 @@ In-memory storage for session-to-memory conversion:
 - Extracts key information from sessions
 - Makes it searchable via `load_memory` tool
 - Enables agents to recall past conversations
-
----
-
-## Session & Memory Management
-
-### Database Architecture
-
-**Database**: SQLite (via aiosqlite for async support)  
-**Connection String**: `sqlite+aiosqlite:///./traffic_sathi_data.db`
-
-**Schema** (managed automatically by ADK):
 ```sql
 -- Sessions table
 CREATE TABLE sessions (

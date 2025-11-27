@@ -35,10 +35,10 @@ runner = None
 async def get_runner():
     global session_service, memory_service, runner
     if runner is None:
-        from app.agents.traffic_agent import Full_Research_Agent
+        from app.agents.prana_rakshak_agent import Full_Research_Agent
         
         # Use synchronous driver to avoid MissingGreenlet error in DatabaseSessionService init
-        db_url = "sqlite:///./traffic_sathi_data.db"
+        db_url = "sqlite:///./prana_rakshak_data.db"
         session_service = DatabaseSessionService(db_url=db_url)
         memory_service = InMemoryMemoryService()
         

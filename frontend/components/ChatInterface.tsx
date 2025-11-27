@@ -111,7 +111,7 @@ export default function ChatInterface() {
                         <Activity className="w-6 h-6 text-black" />
                     </div>
                     <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)]">
-                        Traffic Sathi
+                        Prana-Rakshak
                     </h1>
                 </div>
 
@@ -173,15 +173,15 @@ export default function ChatInterface() {
                             >
                                 <div className={`flex gap-4 max-w-[85%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user"
-                                            ? "bg-[var(--secondary)] shadow-[0_0_15px_var(--secondary-glow)]"
-                                            : "bg-[var(--primary)] shadow-[0_0_15px_var(--primary-glow)]"
+                                        ? "bg-[var(--secondary)] shadow-[0_0_15px_var(--secondary-glow)]"
+                                        : "bg-[var(--primary)] shadow-[0_0_15px_var(--primary-glow)]"
                                         }`}>
                                         {msg.role === "user" ? <User className="w-5 h-5 text-black" /> : <Bot className="w-5 h-5 text-black" />}
                                     </div>
 
                                     <div className={`p-6 rounded-2xl backdrop-blur-md border ${msg.role === "user"
-                                            ? "bg-[rgba(189,0,255,0.1)] border-[var(--secondary)]/30 text-white"
-                                            : "bg-[rgba(0,242,255,0.05)] border-[var(--primary)]/20 text-gray-100"
+                                        ? "bg-[rgba(189,0,255,0.1)] border-[var(--secondary)]/30 text-white"
+                                        : "bg-[rgba(0,242,255,0.05)] border-[var(--primary)]/20 text-gray-100"
                                         }`}>
                                         <div className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
                                             <ReactMarkdown

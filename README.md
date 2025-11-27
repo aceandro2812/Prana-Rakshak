@@ -1,9 +1,3 @@
-# Traffic Sathi 🚦
-
-**Traffic Sathi** is an intelligent multi-agent AI system that provides comprehensive insights about air quality and traffic conditions in your area, helping you make informed decisions about when to travel or go outdoors.
-
-## 🎯 Vision
-
 The core vision of Traffic Sathi is to **simplify decision-making for daily commuters and health-conscious individuals** by consolidating critical environmental and traffic data into a single, easy-to-use conversational interface.
 
 ### The Problem We Solve

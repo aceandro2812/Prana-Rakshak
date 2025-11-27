@@ -6,8 +6,8 @@ import dotenv
 dotenv.load_dotenv()
 
 app = FastAPI(
-    title="Traffic Sathi API",
-    description="Backend API for Traffic Sathi Agent System",
+    title="Prana-Rakshak API",
+    description="Backend API for Prana-Rakshak Agent System",
     version="1.0.0"
 )
 
@@ -25,4 +25,4 @@ app.include_router(router, prefix="/api")
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Traffic Sathi API 🚦"}
+    return {"message": "Welcome to Prana-Rakshak API 🚦"}
