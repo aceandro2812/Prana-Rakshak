@@ -1,6 +1,6 @@
 from google.adk.agents import Agent, SequentialAgent, ParallelAgent
 from google.adk.models.google_llm import Gemini
-from google.adk.tools import google_search, load_memory, ToolContext
+from google.adk.tools import google_search, load_memory
 from google.adk.tools.agent_tool import AgentTool
 from google.genai import types
 import requests
@@ -25,32 +25,14 @@ async def auto_save_session_to_memory_callback(callback_context):
         )
     except Exception as e:
         print(f"Warning: Failed to save session to memory: {e}")
+
 # ------------------------
 # Custom Tools
 # ------------------------
-def get_precise_location(context: ToolContext) -> dict:
+def get_precise_location() -> dict:
     """
-    Resolve the user's location.
-    Prioritizes precise coordinates from the frontend (stored in session state).
-    Falls back to IP-based geolocation if precise coordinates are missing.
+    Resolve the user's location via IP Geolocation.
     """
-    # 1. Try to get precise location from session state
-    try:
-        session_state = context.session.state
-        if session_state and "precise_location" in session_state:
-            loc = session_state["precise_location"]
-            return {
-                "city": "Current Location", # We could reverse geocode this if needed, or let the agent do it
-                "region": "",
-                "country": "",
-                "lat": loc.get("lat"),
-                "lng": loc.get("lng"),
-                "source": "GPS"
-            }
-    except Exception as e:
-        print(f"Error reading session state: {e}")
-
-    # 2. Fallback to IP Geolocation
     try:
         token = settings.IPINFO_TOKEN
         headers = {"Authorization": f"Bearer {token}"} if token else None
@@ -91,9 +73,13 @@ def get_precise_location(context: ToolContext) -> dict:
 Location_Research_agent = Agent(
     name="Location_Research_Agent",
     model=Gemini(model="gemini-2.5-flash-lite", retry_options=retry_config),
-    instruction="""Your sole task is to call the tool get_precise_location and output the result.
-    Do not ask the user any questions. If the tool returns null values, still output a best-effort string including any available fields.
+    instruction="""Your task is to determine the user's location.
+    1. **Check Context**: Look at the user's message for a system note containing "User's Precise Location" with Latitude and Longitude.
+       - If found, output these coordinates directly.
+    2. **Fallback**: If no coordinates are in the message, call the tool `get_precise_location`.
+    
     Output format (single line): city=<city>; region=<region>; country=<country>; lat=<lat>; lng=<lng>
+    (Fill in what you can, use "Unknown" for missing fields if using raw coordinates).
     """,
     tools=[get_precise_location],
     output_key="location_research_output"
