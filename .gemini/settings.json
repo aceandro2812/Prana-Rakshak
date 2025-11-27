@@ -1,0 +1,42 @@
+{
+  "ui": {
+    "showStatusInTitle": true
+  },
+  "mcpServers": {
+    "exa": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "exa",
+        "--key",
+        "e7295a23-a667-4d39-a7fb-aa2bdb981746",
+        "--profile",
+        "bottom-shrimp-DIrJp1"
+      ]
+    },
+    "oraios/serena": {
+			"type": "stdio",
+			"command": "uvx",
+			"args": [
+				"--from",
+				"git+https://github.com/oraios/serena",
+				"--native-tls",  // <-- ADD THIS LINE
+				"serena",
+				"start-mcp-server",
+				"serena==latest",
+				"--context",
+				"ide-assistant"
+			],
+			"gallery": "https://api.mcp.github.com",
+			"version": "1.0.0"
+		},
+    "Vibe Check": {
+			"type": "http",
+			"url": "https://server.smithery.ai/@PV-Bhat/vibe-check-mcp-server/mcp"
+		}
+  }
+}
