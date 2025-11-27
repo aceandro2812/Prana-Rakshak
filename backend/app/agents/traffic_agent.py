@@ -1,6 +1,6 @@
 from google.adk.agents import Agent, SequentialAgent, ParallelAgent
 from google.adk.models.google_llm import Gemini
-from google.adk.tools import google_search, load_memory
+from google.adk.tools import google_search, load_memory, ToolContext
 from google.adk.tools.agent_tool import AgentTool
 from google.genai import types
 import requests
@@ -25,11 +25,32 @@ async def auto_save_session_to_memory_callback(callback_context):
         )
     except Exception as e:
         print(f"Warning: Failed to save session to memory: {e}")
-
 # ------------------------
 # Custom Tools
 # ------------------------
-def get_precise_location() -> dict:
+def get_precise_location(context: ToolContext) -> dict:
+    """
+    Resolve the user's location.
+    Prioritizes precise coordinates from the frontend (stored in session state).
+    Falls back to IP-based geolocation if precise coordinates are missing.
+    """
+    # 1. Try to get precise location from session state
+    try:
+        session_state = context.session.state
+        if session_state and "precise_location" in session_state:
+            loc = session_state["precise_location"]
+            return {
+                "city": "Current Location", # We could reverse geocode this if needed, or let the agent do it
+                "region": "",
+                "country": "",
+                "lat": loc.get("lat"),
+                "lng": loc.get("lng"),
+                "source": "GPS"
+            }
+    except Exception as e:
+        print(f"Error reading session state: {e}")
+
+    # 2. Fallback to IP Geolocation
     try:
         token = settings.IPINFO_TOKEN
         headers = {"Authorization": f"Bearer {token}"} if token else None
@@ -52,6 +73,7 @@ def get_precise_location() -> dict:
             "country": data.get("country"),
             "lat": lat,
             "lng": lng,
+            "source": "IP"
         }
     except Exception:
         return {
@@ -60,6 +82,7 @@ def get_precise_location() -> dict:
             "country": None,
             "lat": None,
             "lng": None,
+            "source": "None"
         }
 
 # ------------------------

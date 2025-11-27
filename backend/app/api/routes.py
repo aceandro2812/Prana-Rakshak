@@ -19,6 +19,8 @@ class ChatRequest(BaseModel):
     message: str
     session_id: str = "default_session"
     user_id: str = "user"
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class ChatResponse(BaseModel):
     response: str
@@ -61,6 +63,24 @@ async def chat(request: ChatRequest):
             app_name="agents", user_id=request.user_id, session_id=request.session_id
         )
     
+    # Update session state with precise location if provided
+    if request.latitude is not None and request.longitude is not None:
+        if session.state is None:
+            session.state = {}
+        session.state["precise_location"] = {
+            "lat": request.latitude,
+            "lng": request.longitude
+        }
+        # We need to save the session state update. 
+        # The runner usually handles saving after execution, but we want this available immediately.
+        # However, since we are about to run the agent, we can rely on the agent reading from session.state
+        # But we must ensure the session object passed to run_async has this state.
+        # The runner re-loads session? No, it takes session_id. 
+        # Actually runner.run_async takes session_id and loads it. 
+        # So we should update the session via the service or ensure the runner uses our modified session.
+        # ADK Runner loads session by ID. So we must save it first.
+        await current_runner.session_service.update_session(session)
+
     content = types.Content(role="user", parts=[types.Part(text=request.message)])
     
     final_text = ""

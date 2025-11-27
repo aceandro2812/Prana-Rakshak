@@ -2,9 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Wind, Car, MapPin, Activity, Bot, User } from "lucide-react";
 import GlassCard from "./GlassCard";
+import GlassTable, { GlassTableHead, GlassTableBody, GlassTableRow, GlassTableCell } from "./GlassTable";
+import AnimatedList, { AnimatedListItem } from "./AnimatedList";
+import InfoCard from "./InfoCard";
 
 interface Message {
     role: "user" | "assistant";
@@ -17,6 +21,7 @@ export default function ChatInterface() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [sessionId] = useState(() => "session_" + Math.random().toString(36).substr(2, 9));
+    const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -26,6 +31,22 @@ export default function ChatInterface() {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    useEffect(() => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setLocation({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                    });
+                },
+                (error) => {
+                    console.error("Error getting location:", error);
+                }
+            );
+        }
+    }, []);
 
     const sendMessage = async () => {
         if (!input.trim()) return;
@@ -49,6 +70,8 @@ export default function ChatInterface() {
                     message: userMessage.content,
                     session_id: sessionId,
                     user_id: "user_frontend",
+                    latitude: location?.lat,
+                    longitude: location?.lng,
                 }),
             });
 
@@ -149,18 +172,32 @@ export default function ChatInterface() {
                             >
                                 <div className={`flex gap-4 max-w-[85%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user"
-                                            ? "bg-[var(--secondary)] shadow-[0_0_15px_var(--secondary-glow)]"
-                                            : "bg-[var(--primary)] shadow-[0_0_15px_var(--primary-glow)]"
+                                        ? "bg-[var(--secondary)] shadow-[0_0_15px_var(--secondary-glow)]"
+                                        : "bg-[var(--primary)] shadow-[0_0_15px_var(--primary-glow)]"
                                         }`}>
                                         {msg.role === "user" ? <User className="w-5 h-5 text-black" /> : <Bot className="w-5 h-5 text-black" />}
                                     </div>
 
                                     <div className={`p-6 rounded-2xl backdrop-blur-md border ${msg.role === "user"
-                                            ? "bg-[rgba(189,0,255,0.1)] border-[var(--secondary)]/30 text-white"
-                                            : "bg-[rgba(0,242,255,0.05)] border-[var(--primary)]/20 text-gray-100"
+                                        ? "bg-[rgba(189,0,255,0.1)] border-[var(--secondary)]/30 text-white"
+                                        : "bg-[rgba(0,242,255,0.05)] border-[var(--primary)]/20 text-gray-100"
                                         }`}>
                                         <div className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
-                                            <ReactMarkdown>
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkGfm]}
+                                                components={{
+                                                    table: GlassTable,
+                                                    thead: GlassTableHead,
+                                                    tbody: GlassTableBody,
+                                                    tr: GlassTableRow,
+                                                    th: GlassTableCell,
+                                                    td: GlassTableCell,
+                                                    ul: AnimatedList,
+                                                    ol: AnimatedList,
+                                                    li: AnimatedListItem,
+                                                    blockquote: InfoCard
+                                                }}
+                                            >
                                                 {msg.content}
                                             </ReactMarkdown>
                                         </div>
