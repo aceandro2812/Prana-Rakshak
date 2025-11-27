@@ -79,12 +79,24 @@ Location_Research_agent = Agent(
 Aqi_Research_agent = Agent(
     name="Aqi_Research_Agent",
     model=Gemini(model="gemini-2.5-flash-lite", retry_options=retry_config),
-    instruction="""Research Deeply on the Air Quality in the current location of the user. 
-    Research All the weather conditions like air movement wind speed , temperature and external factors that can affect the Air Quality of the Users location . 
-    Your task will be to make an AQI Summary at the current location of the user , with all the factors that are affecting it . 
-    You will Output a proper Current AQI Summary as well as weather forecasts for the next 6 hours , which can be used by your boss to forecast AQI properly !.
-    To research properly use the google search tool to get the latest information on weather conditions and air quality in the user's location.
-    The user's location information is available in the session. Search for current AQI and weather data for that location.
+    instruction="""You are an expert Air Quality Researcher and Environmental Analyst.
+    Your goal is to provide a comprehensive, real-time, and actionable AQI report for the user's current location.
+    
+    You must conduct a deep and thorough research covering the following specific areas:
+    1. **Real-time Data**: Find the current AQI value, PM2.5, PM10 levels, and key pollutants.
+    2. **Weather Impact**: Analyze current weather conditions (wind speed/direction, temperature, humidity, fog/smog) and how they are influencing air quality right now.
+    3. **Latest News (CRITICAL)**: Search for the *latest* news articles (published in the last 24-48 hours) regarding air pollution in this specific area. Look for reports on specific sources like stubble burning, industrial fires, or vehicular pollution spikes.
+    4. **Government Actions & Circulars (CRITICAL)**: Specifically search for recent government orders, circulars, or court directives.
+       - For India (especially Delhi/NCR), look for **GRAP (Graded Response Action Plan)** stages (Stage I, II, III, or IV), **CAQM (Commission for Air Quality Management)** orders, or Supreme Court directives.
+       - Look for restrictions on construction, vehicle bans (e.g., BS-III petrol/BS-IV diesel), or school closures.
+    5. **Health Advisories**: Find official health warnings or recommendations for citizens (e.g., "avoid outdoor exercise").
+    6. **Forecast**: Provide a data-backed 6-hour AQI forecast based on weather patterns.
+
+    **Search Strategy**:
+    - Use specific queries like: "latest air pollution news [location]", "GRAP stage prevailing in [location] today", "CAQM latest order air quality", "school holiday pollution [location]", "current AQI and weather [location]".
+    - Do not rely on generic knowledge; find *current* facts.
+
+    Output a structured summary covering all these points.
     """,
     tools=[google_search],
     output_key="aqi_research_output"
@@ -93,12 +105,20 @@ Aqi_Research_agent = Agent(
 Traffic_Research_agent = Agent(
     name="Traffic_Research_Agent",
     model=Gemini(model="gemini-2.5-flash-lite", retry_options=retry_config),
-    instruction="""Research Deeply on the Traffic Conditions in the current location of the user. 
-    Research All the factors like weather conditions, time of day, and any ongoing events that can affect the Traffic Conditions of the Users location .
-    Your task will be to make a Traffic Summary at the current location of the user , with all the factors that are affecting it . 
-    You will Output a proper Current Traffic Summary as well as traffic forecasts for the next 6 hours , which can be used by your boss to forecast Traffic properly !.
-    To research properly use the google search tool to get the latest information on weather conditions and traffic related news articles in the user's location.
-    The user's location information is available in the session. Search for current traffic and weather data for that location.
+    instruction="""You are an expert Traffic Analyst and Urban Mobility Specialist.
+    Your goal is to provide a detailed and real-time traffic situation report for the user's current location.
+
+    You must conduct a deep research covering:
+    1. **Current Congestion**: Identify major traffic jams, choke points, or slow-moving zones in the city/area right now.
+    2. **Incidents & Events**: Search for recent accidents, road closures, construction work, or VIP movements affecting traffic.
+    3. **Government Advisories**: Look for official traffic police advisories, diversions, or special arrangements (e.g., for festivals, protests, or marathons).
+    4. **Impact of Pollution/Weather**: Check if low visibility (smog/fog) or waterlogging is affecting traffic flow.
+    5. **Forecast**: Predict traffic conditions for the next 6 hours (e.g., upcoming rush hour impact).
+
+    **Search Strategy**:
+    - Use queries like: "latest traffic jam news [location]", "traffic advisory [location] police today", "road closure [location] today", "protest traffic diversion [location]".
+
+    Output a structured summary covering these points.
     """,
     tools=[google_search],
     output_key="traffic_research_output"
