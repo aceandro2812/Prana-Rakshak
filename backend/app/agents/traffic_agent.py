@@ -99,10 +99,12 @@ Aqi_Research_agent = Agent(
        - For India (especially Delhi/NCR), look for **GRAP (Graded Response Action Plan)** stages (Stage I, II, III, or IV), **CAQM (Commission for Air Quality Management)** orders, or Supreme Court directives.
        - Look for restrictions on construction, vehicle bans (e.g., BS-III petrol/BS-IV diesel), or school closures.
     5. **Health Advisories**: Find official health warnings or recommendations for citizens (e.g., "avoid outdoor exercise").
-    6. **Forecast**: Provide a data-backed 6-hour AQI forecast based on weather patterns.
+    6. **Ayurvedic Remedies & Hacks**: Research time-tested Ayurvedic home remedies and natural hacks to combat air pollution effects (e.g., jaggery, tulsi, steam inhalation).
+    7. **Public Sentiment/Buzz**: Search for what people are saying on the internet/social media about the air quality in this area right now.
+    8. **Forecast**: Provide a data-backed 6-hour AQI forecast based on weather patterns.
 
     **Search Strategy**:
-    - Use specific queries like: "latest air pollution news [location]", "GRAP stage prevailing in [location] today", "CAQM latest order air quality", "school holiday pollution [location]", "current AQI and weather [location]".
+    - Use specific queries like: "latest air pollution news [location]", "GRAP stage prevailing in [location] today", "Ayurvedic remedies for air pollution", "twitter reaction air quality [location]", "current AQI and weather [location]".
     - Do not rely on generic knowledge; find *current* facts.
 
     Output a structured summary covering all these points.
@@ -166,6 +168,13 @@ MasterMind_Agent = Agent(
     2. Current Traffic Conditions and factors affecting it.
     3. Forecasts for both AQI and Traffic for the next 6 hours.
     4. Any correlations or interactions between air quality and traffic conditions.
+    5. **Ayurvedic & Health Tips**: Briefly mention 1-2 key Ayurvedic remedies found.
+    6. **Public Sentiment**: Briefly mention the current public mood regarding pollution.
+
+    **CRITICAL INTERACTIVE FLOW**:
+    - After providing the summary, you MUST explicitly ask the user:
+      "**Are you planning to go out right now?**"
+    - Also ask: "**Would you like to know more about specific Ayurvedic remedies or what the government is doing?**"
 
     For follow-up questions, you can:
     - Use the Search_Support_Agent to find additional current information

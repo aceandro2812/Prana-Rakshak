@@ -9,6 +9,7 @@ import GlassCard from "./GlassCard";
 import GlassTable, { GlassTableHead, GlassTableBody, GlassTableRow, GlassTableCell } from "./GlassTable";
 import AnimatedList, { AnimatedListItem } from "./AnimatedList";
 import InfoCard from "./InfoCard";
+import AqiWeatherCard from "./AqiWeatherCard";
 
 interface Message {
     role: "user" | "assistant";
@@ -172,15 +173,15 @@ export default function ChatInterface() {
                             >
                                 <div className={`flex gap-4 max-w-[85%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user"
-                                        ? "bg-[var(--secondary)] shadow-[0_0_15px_var(--secondary-glow)]"
-                                        : "bg-[var(--primary)] shadow-[0_0_15px_var(--primary-glow)]"
+                                            ? "bg-[var(--secondary)] shadow-[0_0_15px_var(--secondary-glow)]"
+                                            : "bg-[var(--primary)] shadow-[0_0_15px_var(--primary-glow)]"
                                         }`}>
                                         {msg.role === "user" ? <User className="w-5 h-5 text-black" /> : <Bot className="w-5 h-5 text-black" />}
                                     </div>
 
                                     <div className={`p-6 rounded-2xl backdrop-blur-md border ${msg.role === "user"
-                                        ? "bg-[rgba(189,0,255,0.1)] border-[var(--secondary)]/30 text-white"
-                                        : "bg-[rgba(0,242,255,0.05)] border-[var(--primary)]/20 text-gray-100"
+                                            ? "bg-[rgba(189,0,255,0.1)] border-[var(--secondary)]/30 text-white"
+                                            : "bg-[rgba(0,242,255,0.05)] border-[var(--primary)]/20 text-gray-100"
                                         }`}>
                                         <div className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10">
                                             <ReactMarkdown
@@ -195,7 +196,20 @@ export default function ChatInterface() {
                                                     ul: AnimatedList,
                                                     ol: AnimatedList,
                                                     li: AnimatedListItem,
-                                                    blockquote: InfoCard
+                                                    blockquote: InfoCard,
+                                                    code(props) {
+                                                        const { children, className, node, ...rest } = props
+                                                        const match = /language-(\w+)/.exec(className || '')
+                                                        if (match && match[1] === 'aqi') {
+                                                            try {
+                                                                const data = JSON.parse(String(children).replace(/\n$/, ''))
+                                                                return <AqiWeatherCard data={data} />
+                                                            } catch (e) {
+                                                                return <code {...rest} className={className}>{children}</code>
+                                                            }
+                                                        }
+                                                        return <code {...rest} className={className}>{children}</code>
+                                                    }
                                                 }}
                                             >
                                                 {msg.content}
