@@ -1,216 +1,111 @@
-The core vision of Traffic Sathi is to **simplify decision-making for daily commuters and health-conscious individuals** by consolidating critical environmental and traffic data into a single, easy-to-use conversational interface.
+# Prana-Rakshak 🛡️
 
-### The Problem We Solve
+**Prana-Rakshak** (formerly Traffic Sathi) is an intelligent, full-stack multi-agent AI system designed to protect your health by providing real-time insights into air quality and traffic conditions. It combines a powerful **FastAPI** backend powered by **Google's Agent Development Kit (ADK)** with a stunning, modern **Next.js** frontend.
 
-Currently, people need to:
-- Visit multiple websites to check air quality (AQI) data
-- Check separate apps for traffic conditions
-- Manually correlate weather forecasts with AQI and traffic
-- Spend time analyzing when is the best time to travel or go outdoors
-- Miss important connections between air quality and traffic congestion
+## 🎯 Vision
 
-### Our Solution
+To empower individuals to make informed decisions about their daily commute and outdoor activities by correlating environmental data with traffic patterns, presented through an intuitive and beautiful conversational interface.
 
-Traffic Sathi uses a **specialized multi-agent AI system** that:
+## 🏗️ Tech Stack
 
-✅ **Automatically detects your location** using IP geolocation  
-✅ **Researches air quality** with real-time AQI data, weather conditions, and forecasts  
-✅ **Analyzes traffic patterns** including congestion, events, and time-of-day factors  
-✅ **Identifies time windows** when air quality is optimal or hazardous  
-✅ **Correlates data** to show how traffic affects air quality and vice versa  
-✅ **Provides actionable insights** in natural language conversations  
-✅ **Remembers your preferences** across sessions for personalized recommendations  
+### Frontend 💻
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4, CSS Modules
+- **UI Components**: Lucide React, Framer Motion (for animations)
+- **Design**: Glassmorphism, Dark Mode, Responsive Layout
 
-### Use Cases
-
-1. **Daily Commuters**: Plan your commute during times with better air quality and less traffic
-2. **Parents**: Choose optimal outdoor play times for children based on AQI
-3. **Fitness Enthusiasts**: Schedule outdoor workouts when air quality is good
-4. **Health-Conscious Individuals**: Avoid exposure during poor air quality windows
-5. **Event Planners**: Factor in traffic and air quality for outdoor events
-6. **Delivery Services**: Optimize routes considering both traffic and environmental conditions
+### Backend ⚙️
+- **Framework**: [FastAPI](https://fastapi.tiangolo.com/)
+- **AI Framework**: [Google ADK](https://github.com/google/project-idx-python) (Agent Development Kit)
+- **LLM**: Google Gemini 2.5 Flash Lite
+- **Database**: SQLite (via `aiosqlite`)
+- **Tools**: `ipinfo.io` (Geolocation), Google Search (Research)
 
 ---
 
-## Features ✨
+## 🚀 Getting Started
 
-- **Multi-Agent System**: Specialized agents for location detection, AQI research, traffic analysis, and consolidation
-- **Multi-Turn Conversations**: Ask follow-up questions and the agent remembers your conversation context
-- **Database Persistence**: Sessions are stored in SQLite for conversation continuity across restarts
-- **Long-Term Memory**: Uses ADK's MemoryService to recall information from past conversations
-- **IP-Based Geolocation**: Automatically detects your location using ipinfo.io API
-- **Parallel Processing**: AQI and Traffic research agents run concurrently for faster results
-- **State-Based Communication**: Agents share information via session state using ADK's fan-out/gather pattern
+### Prerequisites
+- **Python 3.10+**
+- **Node.js 18+**
+- **Google GenAI API Key**
+- **IPInfo Token** (Optional, for better location accuracy)
 
-## Architecture 🏗️
+### 1. Backend Setup
 
-The system uses a hierarchical multi-agent structure:
-
-1. **Full_Research_Agent** (SequentialAgent)
-   - **Location_Research_agent**: Detects user location via IP geolocation
-   - **Local_Conditions_Research_Team** (ParallelAgent)
-     - **Aqi_Research_agent**: Researches air quality conditions
-     - **Traffic_Research_agent**: Researches traffic conditions
-   - **MasterMind_Agent**: Consolidates findings and handles user interaction
-
-## Installation 📦
-
-1. Clone the repository:
+Navigate to the backend directory:
 ```bash
-git clone <repository-url>
-cd Traffic_Sathi
+cd backend
 ```
 
-2. Install dependencies:
+Create a virtual environment and activate it:
 ```bash
-pip install google-adk requests python-dotenv
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+source venv/bin/activate
 ```
 
-3. (Optional) Create a `.env` file for enhanced features:
+Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+Create a `.env` file in the `backend` directory:
 ```env
-IPINFO_TOKEN=your_ipinfo_token_here
+GOOGLE_API_KEY=your_google_api_key
+IPINFO_TOKEN=your_ipinfo_token
 ```
 
-## Usage 🚀
-
-Run the application:
+Run the backend server:
 ```bash
-python main.py
+python -m app.main
+# OR using uvicorn directly if configured
+uvicorn app.main:app --reload
+```
+The API will be available at `http://localhost:8000`.
+
+### 2. Frontend Setup
+
+Open a new terminal and navigate to the frontend directory:
+```bash
+cd frontend
 ```
 
-### Example Conversation
-
-```
-Welcome to Traffic Sathi! 🚦
-Ask me about air quality and traffic conditions in your area.
-You can ask follow-up questions, and I'll remember our conversation.
-Type 'exit' or 'quit' to end the session.
-
-------------------------------------------------------------
-
-🔵 You: What are the current air quality and traffic conditions?
-
-🤖 MasterMind Agent: [Detailed report with AQI and traffic analysis]
-
-------------------------------------------------------------
-
-🔵 You: What was the AQI you mentioned?
-
-🤖 MasterMind Agent: [Recalls specific AQI value from previous response]
-
-------------------------------------------------------------
-
-🔵 You: exit
-
-👋 Thank you for using Traffic Sathi! Session saved.
+Install dependencies:
+```bash
+npm install
 ```
 
-## Key Features Explained 🔍
-
-### Multi-Turn Conversations
-- Sessions are persisted in `traffic_sathi_data.db` (SQLite)
-- Conversation history is maintained across app restarts
-- Use the same `session_id` to resume previous conversations
-
-### Memory System
-- **Short-term memory**: Session history (events and state)
-- **Long-term memory**: Extracted knowledge from past conversations
-- The MasterMind agent uses the `load_memory` tool to recall past information
-- Sessions are automatically saved to memory after each turn
-
-### State-Based Communication
-The system uses ADK's recommended pattern for multi-agent communication:
-- Location agent outputs via `output_key="location_research_output"`
-- Sub-agents read via placeholder `{location_research_output}` in their instructions
-- This avoids the multi-tool limitation in sub-agents
-
-## Technical Details 🔧
-
-### Database Schema
-The DatabaseSessionService creates tables automatically:
-- Sessions: Stores session metadata (id, user_id, app_name, timestamps)
-- Events: Stores conversation events (messages, tool calls, responses)
-- State: Stores session state key-value pairs
-
-### Memory Service
-- Uses `InMemoryMemoryService` for development
-- Stores conversation content for semantic search
-- Can be upgraded to `VertexAiMemoryBankService` for production
-
-### Tool Limitations
-Due to ADK constraints:
-- Sub-agents can only have ONE tool each
-- Cannot mix FunctionTool with built-in tools in sub-agents
-- Solution: Use state-passing pattern via SequentialAgent hierarchy
-
-## Configuration ⚙️
-
-### Gemini Model
-Currently using `gemini-2.5-flash-lite` for all agents. To use a more powerful model with better tool support:
-
-```python
-model=Gemini(model="gemini-2.0-flash", retry_options=retry_config)
+Run the development server:
+```bash
+npm run dev
 ```
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### Retry Configuration
-The system includes exponential backoff for API errors:
-- 5 retry attempts
-- Retries on HTTP 429, 500, 503, 504 errors
-- Base delay multiplier: 7 seconds
+---
 
-## Project Structure 📁
+## 🏛️ Architecture
 
-```
-Traffic_Sathi/
-├── main.py                      # Main application with all agents
-├── traffic_sathi_data.db        # SQLite database (auto-created)
-├── pyproject.toml               # Project configuration
-├── README.md                    # This file
-└── .env                         # Environment variables (optional)
-```
+The system follows a Client-Server architecture:
 
-## Troubleshooting 🔧
+1.  **Frontend (Client)**: Captures user input and precise geolocation (via Browser API). Sends requests to the backend API. Displays streaming responses, AQI cards, and traffic data in a rich UI.
+2.  **Backend (Server)**: Hosts the Multi-Agent System.
+    -   **MasterMind Agent**: Orchestrates the workflow.
+    -   **Location Agent**: Refines location data.
+    -   **AQI & Traffic Agents**: Perform parallel research using Google Search.
+    -   **Memory Service**: Maintains conversation context across sessions.
 
-### "Tool use with function calling is unsupported"
-- This occurs when sub-agents have multiple tools or mix function/built-in tools
-- Current architecture avoids this by using state-passing pattern
+## ✨ Features
 
-### Location detection fails
-- Check internet connectivity
-- Add IPINFO_TOKEN to .env for higher API quota
-- The system gracefully handles null location values
+-   **Real-time AI Chat**: Conversational interface to query environmental data.
+-   **Live Geolocation**: Uses browser geolocation for hyper-local accuracy.
+-   **Visual Data Cards**: Beautifully designed cards for AQI and Weather data.
+-   **Persistent Sessions**: Chat history is saved and can be resumed.
+-   **Adaptive UI**: "Prana Vayu" (Nature) and "Traffic Sathi" (Cyberpunk) themes (configurable).
 
-### Session not resuming
-- Ensure the database file `traffic_sathi_data.db` exists
-- Check that `session_id` matches previous session
-- Database is created automatically on first run
+## 🤝 Contributing
 
-## Future Enhancements 🚀
-
-- [ ] Implement Traffic MCP tool (mentioned in Traffic agent instruction)
-- [ ] Add fallback location APIs (ipapi.co, geolocation-db.com)
-- [ ] Upgrade to VertexAiMemoryBankService for production deployment
-- [ ] Add session management commands (list, delete, switch sessions)
-- [ ] Implement streaming responses for real-time feedback
-
-## Dependencies 📚
-
-- `google-adk`: Agent Development Kit framework
-- `requests`: HTTP library for API calls
-- `python-dotenv`: Environment variable management
-- `asyncio`: Asynchronous execution
-- `sqlite3`: Database (included in Python standard library)
-
-## License 📄
-
-[Add your license here]
-
-## Contributing 🤝
-
-[Add contribution guidelines here]
-
-## Credits 👏
-
-Built with Google's Agent Development Kit (ADK)
-- [ADK Documentation](https://google.github.io/adk-docs/)
-- [ADK Python SDK](https://github.com/google/adk-python)
+Contributions are welcome! Please feel free to submit a Pull Request.
