@@ -101,3 +101,47 @@ async def get_history(session_id: str, user_id: str = "user"):
     # The ADK session object might differ, let's try to get messages from the DB directly or via service
     # The session object itself has .messages usually
     return {"messages": [m.model_dump() for m in session.messages] if hasattr(session, "messages") else []}
+
+@router.get("/sessions/{user_id}")
+async def get_sessions(user_id: str):
+    db_path = "./prana_rakshak_data.db"
+    if not os.path.exists(db_path):
+        return []
+    
+    try:
+        import aiosqlite
+        async with aiosqlite.connect(db_path) as db:
+            # Fetch sessions and try to get the first user message as title
+            query = """
+                SELECT 
+                    s.id, 
+                    s.create_time, 
+                    s.update_time,
+                    (
+                        SELECT content 
+                        FROM events e 
+                        WHERE e.session_id = s.id 
+                        AND e.author = 'user' 
+                        ORDER BY e.timestamp ASC 
+                        LIMIT 1
+                    ) as title
+                FROM sessions s 
+                WHERE s.user_id = ? 
+                ORDER BY s.update_time DESC
+            """
+            async with db.execute(query, (user_id,)) as cursor:
+                rows = await cursor.fetchall()
+                return [
+                    {
+                        "id": row[0],
+                        "create_time": row[1],
+                        "update_time": row[2],
+                        "title": row[3] if row[3] else f"Session {row[0][:8]}..."
+                    }
+                    for row in rows
+                ]
+    except ImportError:
+        raise HTTPException(status_code=500, detail="aiosqlite not installed")
+    except Exception as e:
+        print(f"Error fetching sessions: {e}")
+        return []

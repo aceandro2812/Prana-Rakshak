@@ -153,6 +153,10 @@ npm run dev
 Visit `http://localhost:3000` to start your journey with Prana-Rakshak!
 
 ---
+## Future Scope 
+1.Hyper Localized IOT implementations :- BYOS(bring your own sensor) format ,where users and contributors can register and connect their own DIY ESP32 based air quality sensors to the platform. 
+
+2.Google Maps MCP integration for better traffic insights and weather insights.
 
 ## 🤝 Contributing
 Contributions are welcome! Please fork the repository and submit a pull request.

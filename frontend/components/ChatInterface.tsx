@@ -1,29 +1,46 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import React, { useState, useEffect, useRef } from "react";
+import { Send, Bot, User, Loader2, MapPin, Activity, Menu, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Wind, Car, MapPin, Activity, Bot, User } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import GlassCard from "./GlassCard";
 import GlassTable, { GlassTableHead, GlassTableBody, GlassTableRow, GlassTableCell } from "./GlassTable";
 import AnimatedList, { AnimatedListItem } from "./AnimatedList";
 import InfoCard from "./InfoCard";
 import AqiWeatherCard from "./AqiWeatherCard";
+import Sidebar from "./Sidebar";
 
 interface Message {
     role: "user" | "assistant";
     content: string;
-    timestamp: Date;
+}
+
+interface LocationState {
+    latitude: number | null;
+    longitude: number | null;
+    error: string | null;
+}
+
+interface Session {
+    id: string;
+    create_time: string;
+    update_time: string;
+    title?: string;
 }
 
 export default function ChatInterface() {
-    const [input, setInput] = useState("");
     const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [sessionId] = useState(() => "session_" + Math.random().toString(36).substr(2, 9));
-    const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [location, setLocation] = useState<LocationState>({ latitude: null, longitude: null, error: null });
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Session State
+    const [sessions, setSessions] = useState<Session[]>([]);
+    const [currentSessionId, setCurrentSessionId] = useState<string>("default_session");
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -33,30 +50,77 @@ export default function ChatInterface() {
         scrollToBottom();
     }, [messages]);
 
+    // Fetch Location
     useEffect(() => {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setLocation({
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                    });
-                },
-                (error) => {
-                    console.error("Error getting location:", error);
-                }
-            );
+        if (!navigator.geolocation) {
+            setLocation(prev => ({ ...prev, error: "Geolocation is not supported by your browser" }));
+            return;
         }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setLocation({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    error: null
+                });
+            },
+            (error) => {
+                setLocation(prev => ({ ...prev, error: error.message }));
+            }
+        );
     }, []);
+
+    // Fetch Sessions
+    const fetchSessions = async () => {
+        try {
+            const response = await fetch("http://localhost:8000/api/sessions/user");
+            if (response.ok) {
+                const data = await response.json();
+                setSessions(data);
+            }
+        } catch (error) {
+            console.error("Error fetching sessions:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchSessions();
+    }, []);
+
+    // Load Session History
+    const loadSessionHistory = async (sessionId: string) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`http://localhost:8000/api/history/${sessionId}?user_id=user`);
+            if (response.ok) {
+                const data = await response.json();
+                // Ideally map history here. For now, we clear to avoid showing stale state if format differs
+                setMessages([]);
+            }
+        } catch (error) {
+            console.error("Error loading history:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleNewChat = () => {
+        const newSessionId = `session_${Date.now()}`;
+        setCurrentSessionId(newSessionId);
+        setMessages([]);
+        fetchSessions();
+    };
+
+    const handleSelectSession = (sessionId: string) => {
+        setCurrentSessionId(sessionId);
+        loadSessionHistory(sessionId);
+    };
 
     const sendMessage = async () => {
         if (!input.trim()) return;
 
-        const userMessage: Message = {
-            role: "user",
-            content: input,
-            timestamp: new Date()
-        };
+        const userMessage = { role: "user" as const, content: input };
         setMessages((prev) => [...prev, userMessage]);
         setInput("");
         setIsLoading(true);
@@ -64,112 +128,96 @@ export default function ChatInterface() {
         try {
             const response = await fetch("http://localhost:8000/api/chat", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    message: userMessage.content,
-                    session_id: sessionId,
-                    user_id: "user_frontend",
-                    latitude: location?.lat,
-                    longitude: location?.lng,
+                    message: input,
+                    session_id: currentSessionId,
+                    user_id: "user",
+                    latitude: location.latitude,
+                    longitude: location.longitude
                 }),
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to fetch response");
-            }
-
             const data = await response.json();
-            const assistantMessage: Message = {
-                role: "assistant",
-                content: data.response,
-                timestamp: new Date()
-            };
-            setMessages((prev) => [...prev, assistantMessage]);
+            const botMessage = { role: "assistant" as const, content: data.response };
+            setMessages((prev) => [...prev, botMessage]);
+
+            // Refresh sessions list
+            fetchSessions();
         } catch (error) {
-            console.error("Error:", error);
-            setMessages((prev) => [
-                ...prev,
-                {
-                    role: "assistant",
-                    content: "Sorry, something went wrong. Please try again.",
-                    timestamp: new Date()
-                },
-            ]);
+            console.error("Error sending message:", error);
+            setMessages((prev) => [...prev, { role: "assistant", content: "Error: Could not connect to the server." }]);
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="flex h-screen w-full overflow-hidden relative z-10">
-            {/* Sidebar / Dashboard Overlay */}
-            <div className="hidden md:flex flex-col w-80 p-6 gap-6 border-r border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-md">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="p-2 rounded-lg bg-[var(--primary)] shadow-[0_0_15px_var(--primary-glow)]">
-                        <Activity className="w-6 h-6 text-black" />
+        <div className="flex h-screen w-full">
+            <Sidebar
+                sessions={sessions}
+                currentSessionId={currentSessionId}
+                onSelectSession={handleSelectSession}
+                onNewChat={handleNewChat}
+                isOpen={isSidebarOpen}
+                toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            />
+
+            <div className="flex-1 flex flex-col h-full relative">
+                {/* Header */}
+                <div className="p-4 border-b border-white/10 bg-black/20 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="md:hidden p-2 text-white/70 hover:text-white"
+                        >
+                            <Menu className="w-6 h-6" />
+                        </button>
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] shadow-[0_0_20px_rgba(0,242,255,0.3)]">
+                            <Activity className="w-6 h-6 text-black" />
+                        </div>
+                        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)]">
+                            Prana-Rakshak
+                        </h1>
                     </div>
-                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)]">
-                        Prana-Rakshak
-                    </h1>
+
+                    <div className="flex items-center gap-4">
+                        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                            <div className={`w-2 h-2 rounded-full ${location.error ? 'bg-red-500' : location.latitude ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`} />
+                            <span className="text-xs font-medium text-white/70">
+                                {location.error ? 'Location Error' : location.latitude ? 'GPS Active' : 'Locating...'}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
-                <GlassCard className="p-4">
-                    <div className="flex items-center gap-3 mb-2 text-[var(--primary)]">
-                        <Wind className="w-5 h-5" />
-                        <h3 className="font-semibold">Air Quality</h3>
-                    </div>
-                    <div className="text-sm text-gray-400">
-                        Monitoring real-time AQI levels in your area.
-                    </div>
-                </GlassCard>
-
-                <GlassCard className="p-4">
-                    <div className="flex items-center gap-3 mb-2 text-[var(--secondary)]">
-                        <Car className="w-5 h-5" />
-                        <h3 className="font-semibold">Traffic Status</h3>
-                    </div>
-                    <div className="text-sm text-gray-400">
-                        Analyzing congestion and optimal routes.
-                    </div>
-                </GlassCard>
-
-                <div className="mt-auto">
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <MapPin className="w-3 h-3" />
-                        <span>Auto-detecting location...</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col relative">
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
-                    <AnimatePresence>
-                        {messages.length === 0 && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="flex flex-col items-center justify-center h-full text-center space-y-6"
-                            >
-                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center shadow-[0_0_50px_var(--primary-glow)]">
-                                    <Bot className="w-12 h-12 text-black" />
-                                </div>
-                                <h2 className="text-3xl font-bold text-white">How can I help you today?</h2>
-                                <p className="text-gray-400 max-w-md">
-                                    I can help you find the best time to travel based on air quality and traffic conditions.
+                {/* Chat Area */}
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar relative">
+                    {/* Welcome Screen with Banner */}
+                    {messages.length === 0 && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-50">
+                            <img
+                                src="/banner.png"
+                                alt="Prana-Rakshak Banner"
+                                className="w-full max-w-2xl object-cover rounded-2xl shadow-[0_0_50px_rgba(0,242,255,0.1)] mb-8 opacity-80"
+                            />
+                            <div className="text-center space-y-4">
+                                <h2 className="text-3xl font-bold text-white">Welcome to Prana-Rakshak</h2>
+                                <p className="text-white/50 max-w-md mx-auto">
+                                    Your personal AI guardian for air quality, traffic, and safe travel.
                                 </p>
-                            </motion.div>
-                        )}
+                            </div>
+                        </div>
+                    )}
 
+                    <AnimatePresence initial={false}>
                         {messages.map((msg, index) => (
                             <motion.div
                                 key={index}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ duration: 0.3 }}
+                                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} relative z-10`}
                             >
                                 <div className={`flex gap-4 max-w-[85%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user"
@@ -191,7 +239,6 @@ export default function ChatInterface() {
                                                     thead: GlassTableHead,
                                                     tbody: GlassTableBody,
                                                     tr: GlassTableRow,
-                                                    th: GlassTableCell,
                                                     td: GlassTableCell,
                                                     ul: AnimatedList,
                                                     ol: AnimatedList,
@@ -215,9 +262,6 @@ export default function ChatInterface() {
                                                 {msg.content}
                                             </ReactMarkdown>
                                         </div>
-                                        <div className="mt-2 text-xs opacity-50">
-                                            {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
                                     </div>
                                 </div>
                             </motion.div>
@@ -228,39 +272,56 @@ export default function ChatInterface() {
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="flex justify-start gap-4"
+                            className="flex justify-start relative z-10"
                         >
-                            <div className="w-10 h-10 rounded-full bg-[var(--primary)] flex items-center justify-center shadow-[0_0_15px_var(--primary-glow)]">
-                                <Bot className="w-5 h-5 text-black" />
-                            </div>
-                            <div className="bg-[rgba(0,242,255,0.05)] border border-[var(--primary)]/20 p-4 rounded-2xl flex gap-2 items-center">
-                                <div className="w-2 h-2 bg-[var(--primary)] rounded-full animate-bounce" style={{ animationDelay: "0s" }} />
-                                <div className="w-2 h-2 bg-[var(--primary)] rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-                                <div className="w-2 h-2 bg-[var(--primary)] rounded-full animate-bounce" style={{ animationDelay: "0.4s" }} />
+                            <div className="flex gap-4">
+                                <div className="w-10 h-10 rounded-full bg-[var(--primary)]/20 flex items-center justify-center relative overflow-hidden">
+                                    <motion.div
+                                        className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--primary)]/50 to-transparent"
+                                        animate={{ x: ['-100%', '100%'] }}
+                                        transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                                    />
+                                    <Sparkles className="w-5 h-5 text-[var(--primary)] relative z-10" />
+                                </div>
+                                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3 relative overflow-hidden group">
+                                    <motion.div
+                                        className="absolute inset-0 bg-gradient-to-r from-[var(--primary)]/0 via-[var(--primary)]/5 to-[var(--primary)]/0"
+                                        animate={{ x: ['-200%', '200%'] }}
+                                        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                                    />
+                                    <Loader2 className="w-4 h-4 text-[var(--primary)] animate-spin" />
+                                    <span className="text-sm text-white/70 font-medium tracking-wide">
+                                        Analyzing environmental factors...
+                                    </span>
+                                </div>
                             </div>
                         </motion.div>
                     )}
                     <div ref={messagesEndRef} />
                 </div>
 
-                <div className="p-4 md:p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                {/* Input Area */}
+                <div className="p-4 border-t border-white/10 bg-black/20 backdrop-blur-md relative z-20">
                     <div className="max-w-4xl mx-auto relative">
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                            placeholder="Ask about AQI, traffic, or best travel times..."
-                            className="w-full p-4 pr-14 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] text-white placeholder-gray-500 focus:outline-none focus:border-[var(--primary)] focus:shadow-[0_0_20px_rgba(0,242,255,0.2)] transition-all"
+                            placeholder="Ask about AQI, traffic, or safe routes..."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-6 pr-14 text-white placeholder-white/30 focus:outline-none focus:border-[var(--primary)]/50 focus:bg-white/10 transition-all shadow-[0_0_20px_rgba(0,0,0,0.2)]"
                         />
                         <button
                             onClick={sendMessage}
-                            disabled={isLoading || !input.trim()}
-                            className="absolute right-2 top-2 p-2 rounded-lg bg-[var(--primary)] text-black hover:bg-[var(--primary)]/80 disabled:opacity-50 disabled:hover:bg-[var(--primary)] transition-colors"
+                            disabled={isLoading}
+                            className="absolute right-2 top-2 p-2 bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed group"
                         >
-                            <Send className="w-5 h-5" />
+                            <Send className="w-5 h-5 text-black group-hover:scale-110 transition-transform" />
                         </button>
                     </div>
+                    <p className="text-center text-xs text-white/30 mt-3">
+                        Powered by Gemini 2.0 • Real-time Traffic & AQI Analysis
+                    </p>
                 </div>
             </div>
         </div>
